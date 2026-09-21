@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}About — SteamScope{% endblock %}
+{% block content %}
+<section class="hero" style="padding-top:0;">
+  <h1>About this build</h1>
+  <p>SteamScope is a Year 12 IT Major Project prototype. It compares two public Steam profiles' hours played, owned games, shared games, and achievement completion on one dashboard.</p>
+</section>
+
+<div class="panel">
+  <h2>In scope</h2>
+  <ul style="color:var(--text-dim); line-height:1.9; padding-left:20px;">
+    <li>Profile search by SteamID64 or profile URL</li>
+    <li>Display of public user information</li>
+    <li>Comparison of total hours, owned games and shared games</li>
+    <li>Comparison of achievement completion for shared games</li>
+    <li>Charts of the above statistics</li>
+  </ul>
+</div>
+
+<div class="panel">
+  <h2>Out of scope</h2>
+  <p style="color:var(--text-dim);">Private Steam data, purchasing, messaging, and account management. SteamScope never collects passwords — authentication stays with Steam's own systems.</p>
+</div>
+
+<div class="panel">
+  <h2>How it's built</h2>
+  <p style="color:var(--text-dim);">Flask (Python) backend, SQLite for caching profile/game data, and the Steam Web API (GetPlayerSummaries, GetOwnedGames, GetPlayerAchievements) for live data. Achievement comparison is scoped to each pair's top shared games by playtime to keep a comparison fast.</p>
+</div>
+{% endblock %}

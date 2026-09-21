@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}{{ a.display_name }} vs {{ b.display_name }} — SteamScope{% endblock %}
+
+{% block content %}
+<div class="dash-header">
+  <h1>{{ a.display_name }} <span class="vs">vs</span> {{ b.display_name }}</h1>
+  <a class="new-search" href="{{ url_for('index') }}">&larr; New comparison</a>
+</div>
+
+<div class="player-grid">
+  {% for p, cls in [(a, ''), (b, 'b')] %}
+  <div class="player-card {{ cls }}">
+    <div class="top">
+      {% if p.avatar %}<img class="avatar" src="{{ p.avatar }}" alt="{{ p.display_name }} avatar">{% endif %}
+      <div>
+        <div class="label">{{ p.label }}</div>
+        <div class="name">
+          {% if p.profile_url %}<a href="{{ p.profile_url }}" target="_blank" rel="noopener">{{ p.display_name }}</a>{% else %}{{ p.display_name }}{% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="player-stats">
+      <div>
+        <div class="stat-num">{{ p.total_hours }}</div>
+        <div class="stat-label">Total hours</div>
+      </div>
+      <div>
+        <div class="stat-num">{{ p.total_games }}</div>
+        <div class="stat-label">Games owned</div>
+      </div>
+    </div>
+    {% if p.private %}
+    <div class="private-note">This profile's game details are private{% if p.games %} — showing the last cached sync{% endif %}.</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<div class="panel">
+  <h2>Achievement completion &amp; hours — top shared games</h2>
+  <div class="legend-inline">
+    <span><span class="dot a"></span>{{ a.display_name }}</span>
+    <span><span class="dot b"></span>{{ b.display_name }}</span>
+  </div>
+  {% if shared_games %}
+  <div class="chart-row">
+    <div class="chart-wrap"><canvas id="achvChart"></canvas></div>
+    <div class="chart-wrap"><canvas id="hoursChart"></canvas></div>
+  </div>
+  {% else %}
+  <p class="no-shared">No shared games found between these two profiles.</p>
+  {% endif %}
+</div>
+
+<div class="panel">
+  <h2>Shared games ({{ shared_count }})</h2>
+  {% if shared_games %}
+  <table class="games-table">
+    <thead>
+      <tr>
+        <th>Game</th>
+        <th class="num">A hours</th>
+        <th class="num">B hours</th>
+        <th>A achievements</th>
+        <th>B achievements</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for g in shared_games %}
+      <tr>
+        <td><img class="game-icon" src="{{ g.header_image_url }}" alt="" onerror="this.style.display='none'">{{ g.title }}</td>
+        <td class="num">{{ g.hours_a }}</td>
+        <td class="num">{{ g.hours_b }}</td>
+        <td>
+          {% if g.achv_total_a %}
+            <span class="achv-bar a"><span style="width:{{ (g.achv_unlocked_a / g.achv_total_a * 100) | round }}%"></span></span>{{ g.achv_unlocked_a }}/{{ g.achv_total_a }}
+          {% else %}<span class="stat-label">—</span>{% endif %}
+        </td>
+        <td>
+          {% if g.achv_total_b %}
+            <span class="achv-bar b"><span style="width:{{ (g.achv_unlocked_b / g.achv_total_b * 100) | round }}%"></span></span>{{ g.achv_unlocked_b }}/{{ g.achv_total_b }}
+          {% else %}<span class="stat-label">—</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="no-shared">Nothing to show yet — these two profiles don't own any of the same games.</p>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if shared_games %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+  const labels = {{ shared_games[:10] | map(attribute='title') | list | tojson }};
+  const hoursA = {{ shared_games[:10] | map(attribute='hours_a') | list | tojson }};
+  const hoursB = {{ shared_games[:10] | map(attribute='hours_b') | list | tojson }};
+  const achvA = {{ shared_games[:10] | map(attribute='achv_unlocked_a') | list | tojson }};
+  const achvTotalA = {{ shared_games[:10] | map(attribute='achv_total_a') | list | tojson }};
+  const achvB = {{ shared_games[:10] | map(attribute='achv_unlocked_b') | list | tojson }};
+  const achvTotalB = {{ shared_games[:10] | map(attribute='achv_total_b') | list | tojson }};
+
+  const pct = (u, t) => (u != null && t) ? Math.round((u / t) * 100) : 0;
+
+  const teal = "#43b3a6";
+  const violet = "#a281d9";
+  const gridColor = "#2a3240";
+  const textColor = "#8993a5";
+
+  Chart.defaults.color = textColor;
+  Chart.defaults.font.family = "Inter, sans-serif";
+
+  new Chart(document.getElementById("achvChart"), {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [
+        { label: "Player A %", data: achvA.map((u, i) => pct(u, achvTotalA[i])), backgroundColor: teal },
+        { label: "Player B %", data: achvB.map((u, i) => pct(u, achvTotalB[i])), backgroundColor: violet },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, title: { display: true, text: "Achievement completion (%)", color: "#e8ecf2", font: { size: 12 } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { maxRotation: 40, minRotation: 40, font: { size: 10 } } },
+        y: { beginAtZero: true, max: 100, grid: { color: gridColor } },
+      },
+    },
+  });
+
+  new Chart(document.getElementById("hoursChart"), {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [
+        { label: "Player A hours", data: hoursA, backgroundColor: teal },
+        { label: "Player B hours", data: hoursB, backgroundColor: violet },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, title: { display: true, text: "Hours played", color: "#e8ecf2", font: { size: 12 } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { maxRotation: 40, minRotation: 40, font: { size: 10 } } },
+        y: { beginAtZero: true, grid: { color: gridColor } },
+      },
+    },
+  });
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}SteamScope — compare two Steam profiles{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1>Compare two Steam profiles.</h1>
+  <p>Enter two SteamIDs, profile URLs, or custom URL names. SteamScope pulls hours played, owned games, and achievement completion into one dashboard.</p>
+</section>
+
+<form class="search-form" method="POST" action="{{ url_for('compare') }}">
+  <div class="field a">
+    <label for="profile_a">Player A</label>
+    <input type="text" id="profile_a" name="profile_a" placeholder="SteamID64 or steamcommunity.com/id/..." required>
+  </div>
+  <div class="field b">
+    <label for="profile_b">Player B</label>
+    <input type="text" id="profile_b" name="profile_b" placeholder="SteamID64 or steamcommunity.com/id/..." required>
+  </div>
+  <button class="primary" type="submit">Compare</button>
+</form>
+
+{% if error %}
+  <div class="error-banner">{{ error }}</div>
+{% endif %}
+
+<p class="hint">Both profiles' game details must be set to public in Steam privacy settings for a full comparison. Private profiles will still show cached data from a previous sync, if any.</p>
+
+{% if recent %}
+<section class="recent" style="margin-top:40px;">
+  <h2>Recent comparisons</h2>
+  {% for c in recent %}
+    <div class="recent-row">
+      <span>{{ c.steam_id_a }} vs {{ c.steam_id_b }}</span>
+      <span><span class="count">{{ c.shared_games_count }}</span> shared games</span>
+    </div>
+  {% endfor %}
+</section>
+{% endif %}
+{% endblock %}
