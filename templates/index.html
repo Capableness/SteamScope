@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block hero %}
+<section class="hero">
+  <div>
+    <h1>SteamScope</h1>
+    <p>Compare two Steam profiles: shared games, hours played and achievements.</p>
+  </div>
+</section>
+{% endblock %}
+{% block content %}
+<div class="panel">
+  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+  {% if session.user %}<p class="help">Signed in as {{ session.user.name }}. You are the first profile.</p>{% endif %}
+
+  <form id="compare-form" action="{{ url_for('compare') }}" method="get" class="search">
+    <div>
+      <label for="a">First profile</label>
+      <input id="a" name="a" value="{{ a }}" placeholder="steamcommunity.com/id/example" autocomplete="off" required>
+    </div>
+    <div>
+      <label for="b">Second profile</label>
+      <input id="b" name="b" value="{{ b }}" placeholder="steamcommunity.com/id/example" autocomplete="off" required>
+    </div>
+    <button type="submit" class="go">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="6.5" cy="6.5" r="4.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 10l4.5 4.5" stroke="currentColor" stroke-width="2"/></svg>
+      Compare
+    </button>
+  </form>
+  <p class="help">Use a profile link, a custom name or a 17 digit Steam ID. Game details must be Public on both profiles.</p>
+  <p id="loading" class="loading" role="status" hidden>Getting the profiles from Steam. The first search for a big library can take up to 15 seconds.</p>
+
+  <div class="columns">
+    <section>
+      <h2>Recent comparisons</h2>
+      {% if recent_searches %}
+      <ul class="rows">
+        {% for s in recent_searches %}
+        <li><a class="main" href="{{ url_for('compare', a=s.steam_id_a, b=s.steam_id_b) }}">{{ s.name_a }} vs {{ s.name_b }}</a><span class="side">{{ s.shared_games }} shared</span></li>
+        {% endfor %}
+      </ul>
+      {% else %}<p class="empty">Nothing yet. Compare two profiles and they will show up here.</p>{% endif %}
+    </section>
+    <section>
+      <h2>Recent profiles</h2>
+      {% if recent_profiles %}
+      <ul class="rows">
+        {% for p in recent_profiles %}
+        <li>{% if p.avatar %}<img src="{{ p.avatar }}" alt="" width="32" height="32" loading="lazy">{% endif %}<button type="button" class="row-link main" data-fill="{{ p.steam_id }}">{{ p.name }}</button><span class="side">{{ '{:,}'.format(p.game_count) }} games</span></li>
+        {% endfor %}
+      </ul>
+      <p class="help">Click a name to fill in the form.</p>
+      {% else %}<p class="empty">No profiles yet.</p>{% endif %}
+    </section>
+    <section>
+      <h2>Popular games</h2>
+      {% if popular_games %}
+      <ul class="rows">
+        {% for g in popular_games %}
+        <li>{% if g.icon %}<img src="https://media.steampowered.com/steamcommunity/public/images/apps/{{ g.appid }}/{{ g.icon }}.jpg" alt="" width="32" height="32" loading="lazy">{% endif %}<span class="main">{{ g.name }}</span><span class="side">{{ g.owners }} {{ 'profile' if g.owners == 1 else 'profiles' }}</span></li>
+        {% endfor %}
+      </ul>
+      {% else %}<p class="empty">No games yet.</p>{% endif %}
+    </section>
+  </div>
+
+  <h2 id="faq" class="faq-title">Questions</h2>
+  <details><summary>Why was a profile rejected as private?</summary><p>Steam only shares the game list when Game details is Public. On Steam go to Edit Profile, then Privacy Settings, and change it. It can take a minute to apply.</p></details>
+  <details><summary>Why are achievements only checked for some games?</summary><p>Steam needs one request for every game, so only the 12 most played shared games are checked. This keeps searches quick.</p></details>
+  <details><summary>What does this site save?</summary><p>Public profile names, game lists, hours and achievement counts are saved for a few hours so repeat searches are fast. The lists above show these saved public names. Signing in only stores your name and Steam ID in a cookie. Your password stays with Steam.</p></details>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='app.js') }}"></script>{% endblock %}

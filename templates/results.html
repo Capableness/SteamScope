@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}{{ r.players[0].name }} vs {{ r.players[1].name }} - SteamScope{% endblock %}
+{% block hero %}
+<section class="hero small"{% if r.top_appid %} style="--art: url('https://cdn.akamai.steamstatic.com/steam/apps/{{ r.top_appid }}/library_hero.jpg')"{% endif %}>
+  <div>
+    <h1><span class="name-a">{{ r.players[0].name }}</span> vs <span class="name-b">{{ r.players[1].name }}</span></h1>
+    <p>{{ r.shared | length }} games in common{% if r.top_game %}. Most played together: {{ r.top_game }}{% endif %}</p>
+  </div>
+</section>
+{% endblock %}
+{% block content %}
+<div class="panel">
+  <h2>Scoreboard</h2>
+  <table class="summary">
+    <thead>
+      <tr><th scope="col">Stat</th><th scope="col" class="name-a">{{ r.players[0].name }}</th><th scope="col" class="name-b">{{ r.players[1].name }}</th></tr>
+    </thead>
+    <tbody>
+    {% for row in r.rows %}
+      <tr>
+        <th scope="row">{{ row.label }}</th>
+        <td class="{{ 'higher' if row.winner == 'a' }}">{{ row.a }}</td>
+        <td class="{{ 'higher' if row.winner == 'b' }}">{{ row.b }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  {% if r.shared %}
+  <h2>Hours in the most played shared games</h2>
+  <figure id="hours-chart" class="figure">
+    <div class="butterfly-head"><span class="name-a">{{ r.players[0].name }}</span><span class="name-b">{{ r.players[1].name }}</span></div>
+    <ul class="butterfly">
+      {% for row in r.hours_rows %}
+      <li>
+        <span class="sr">{{ row.name }}: {{ r.players[0].name }} {{ row.a }} hours, {{ r.players[1].name }} {{ row.b }} hours</span>
+        <div aria-hidden="true">
+          <div class="game">{{ row.name }}</div>
+          <div class="sides">
+            <div class="side left"><span class="num">{{ row.a }} h</span><span class="fill" style="width: {{ row.width_a }}%"></span></div>
+            <div class="side right"><span class="fill" style="width: {{ row.width_b }}%"></span><span class="num">{{ row.b }} h</span></div>
+          </div>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </figure>
+
+  {% if r.ach_rows %}
+  <h2>Achievement completion</h2>
+  <figure id="ach-chart" class="figure">
+    <p class="legend"><span><span class="key-a"></span><span class="name-a">{{ r.players[0].name }}</span></span> <span><span class="key-b"></span><span class="name-b">{{ r.players[1].name }}</span></span></p>
+    <div class="db-axis" aria-hidden="true"><span></span><div class="db-ticks"><span style="left: 0%">0%</span><span style="left: 50%">50%</span><span style="left: 100%">100%</span></div><span></span></div>
+    <ul class="dumbbell">
+      {% for row in r.ach_rows %}
+      <li>
+        <span class="sr">{{ row.name }}: {{ r.players[0].name }} {{ row.a }} percent, {{ r.players[1].name }} {{ row.b }} percent</span>
+        <span class="db-name" aria-hidden="true">{{ row.name }}</span>
+        <div class="db-track" aria-hidden="true">
+          <span class="db-gap" style="left: {{ row.low }}%; width: {{ row.gap }}%"></span>
+          <span class="db-dot a" style="left: {{ row.a }}%"></span>
+          <span class="db-dot b" style="left: {{ row.b }}%"></span>
+        </div>
+        <span class="db-vals" aria-hidden="true">{{ row.a }}% / {{ row.b }}%</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </figure>
+  {% endif %}
+
+  <h2>Shared games</h2>
+  {% if r.ach_failed %}<p class="error">Steam would not answer some achievement lookups, so those games show "not checked". Wait a minute and search again to fill them in.</p>{% endif %}
+  <div class="scroll">
+  <table class="games">
+    <thead>
+      <tr><th scope="col">Game</th><th scope="col">{{ r.players[0].name }} hours</th><th scope="col">{{ r.players[1].name }} hours</th><th scope="col">{{ r.players[0].name }} achievements</th><th scope="col">{{ r.players[1].name }} achievements</th></tr>
+    </thead>
+    <tbody>
+    {% for g in r.shared[:50] %}
+      <tr>
+        <th scope="row">{% if g.icon %}<img src="https://media.steampowered.com/steamcommunity/public/images/apps/{{ g.appid }}/{{ g.icon }}.jpg" alt="" width="24" height="24" loading="lazy">{% endif %}{{ g.name }}</th>
+        <td>{{ to_hours(g.minutes_a) }}</td>
+        <td>{{ to_hours(g.minutes_b) }}</td>
+        <td>{{ achievement_text(g.ach_a) if g.ach_a is defined else "not checked" }}</td>
+        <td>{{ achievement_text(g.ach_b) if g.ach_b is defined else "not checked" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% if r.shared | length > 50 %}<p class="help">Showing the 50 most played of {{ r.shared | length }} shared games.</p>{% endif %}
+
+  {% if r.news %}
+  <h2>Latest news for {{ r.top_game }}</h2>
+  <ul class="rows">
+    {% for n in r.news %}<li><a class="main" href="{{ n.url }}" rel="noopener noreferrer" target="_blank">{{ n.title }}</a><span class="side">{{ n.date }}</span></li>{% endfor %}
+  </ul>
+  {% endif %}
+  {% else %}
+  <p>These two libraries have no games in common, so there is nothing to chart.</p>
+  {% endif %}
+
+  <p class="back"><a href="{{ url_for('index') }}">Compare other profiles</a></p>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+{% endblock %}

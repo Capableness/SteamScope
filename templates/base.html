@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}SteamScope: compare two Steam profiles{% endblock %}</title>
+  <meta name="description" content="Compare two Steam profiles: shared games, hours played and achievement completion.">
+  <meta name="theme-color" content="#0b1622">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="nav">
+    <div class="wrap bar">
+      <a class="logo" href="{{ url_for('index') }}">
+        <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="#2b5f8a"/><rect x="7" y="12" width="7" height="14" fill="#66c0f4"/><rect x="18" y="6" width="7" height="20" fill="#f0a54a"/></svg>
+        SteamScope
+      </a>
+      <nav aria-label="Main">
+        <a href="{{ url_for('index') }}">Compare</a>
+        <a href="{{ url_for('index') }}#faq">Questions</a>
+      </nav>
+      <div class="account">
+        {% if session.user %}
+        <form method="post" action="{{ url_for('logout') }}">{{ session.user.name }} <button type="submit" class="plain">Sign out</button></form>
+        {% else %}
+        <a href="{{ url_for('login') }}"><img src="https://community.fastly.steamstatic.com/public/images/signinthroughsteam/sits_01.png" alt="Sign in through Steam" height="35"></a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+  {% block hero %}{% endblock %}
+  <main id="main" class="wrap">{% block content %}{% endblock %}</main>
+  <footer>
+    <div class="wrap">SteamScope is a school project and is not connected to Valve. Game art, icons and avatars belong to their owners and are loaded from Steam. Data comes from the public Steam Web API.</div>
+  </footer>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
